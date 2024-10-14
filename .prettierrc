@@ -1,0 +1,19 @@
+{
+  "printWidth": 110,
+  "singleQuote": true,
+  "trailingComma": "es5",
+  "tabWidth": 2,
+  "semi": false,
+  "endOfLine": "auto",
+  "overrides": [
+    {
+      "files": ".prettierrc",
+      "options": { "parser": "json" }
+    }
+  ],
+  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+
+  "importOrder": ["^@[^/](.*)$", "^@/", "^[./]"],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true
+}
