@@ -1747,33 +1747,33 @@ isFetchSupported && ((res) => {
     });
   });
 })(new Response());
-const getBodyLength = async (body2) => {
-  if (body2 == null) {
+const getBodyLength = async (body) => {
+  if (body == null) {
     return 0;
   }
-  if (utils$1.isBlob(body2)) {
-    return body2.size;
+  if (utils$1.isBlob(body)) {
+    return body.size;
   }
-  if (utils$1.isSpecCompliantForm(body2)) {
+  if (utils$1.isSpecCompliantForm(body)) {
     const _request = new Request(platform.origin, {
       method: "POST",
-      body: body2
+      body
     });
     return (await _request.arrayBuffer()).byteLength;
   }
-  if (utils$1.isArrayBufferView(body2) || utils$1.isArrayBuffer(body2)) {
-    return body2.byteLength;
+  if (utils$1.isArrayBufferView(body) || utils$1.isArrayBuffer(body)) {
+    return body.byteLength;
   }
-  if (utils$1.isURLSearchParams(body2)) {
-    body2 = body2 + "";
+  if (utils$1.isURLSearchParams(body)) {
+    body = body + "";
   }
-  if (utils$1.isString(body2)) {
-    return (await encodeText(body2)).byteLength;
+  if (utils$1.isString(body)) {
+    return (await encodeText(body)).byteLength;
   }
 };
-const resolveBodyLength = async (headers, body2) => {
+const resolveBodyLength = async (headers, body) => {
   const length = utils$1.toFiniteNumber(headers.getContentLength());
-  return length == null ? getBodyLength(body2) : length;
+  return length == null ? getBodyLength(body) : length;
 };
 const fetchAdapter = isFetchSupported && (async (config) => {
   let {
@@ -2388,10 +2388,7 @@ axios.formToJSON = (thing) => formDataToJSON(utils$1.isHTMLForm(thing) ? new For
 axios.getAdapter = adapters.getAdapter;
 axios.HttpStatusCode = HttpStatusCode;
 axios.default = axios;
-const body = {
-  iChartId: 323543,
-  iSubChartId: 323543,
-  sIdeToken: "mhi97c",
+const baseBody = {
   e_code: 0,
   g_code: 0,
   eas_url: "http%253A%252F%252Fseed.qq.com%252Fact%252Fa20240905record%252F",
@@ -2400,32 +2397,40 @@ const body = {
   isPreengage: 1,
   needGopenid: 1
 };
+const memoryTraceBody = {
+  iChartId: 323691,
+  iSubChartId: 323691,
+  sIdeToken: "Q4rDBY"
+};
+const characterBody = {
+  iChartId: 323543,
+  iSubChartId: 323543,
+  sIdeToken: "mhi97c"
+};
 const fetchService = {
   name: "fetch",
   methods: {
     async fetchGachaData(params) {
-      console.log(body);
-      const response = await axios.post(
-        "https://comm.ams.game.qq.com/ide/",
-        {
-          ...body,
-          startTime: params.dateRange[0],
-          endTime: params.dateRange[1]
-        },
-        {
-          headers: {
-            accept: "application/json, text/plain, */*",
-            "accept-language": "zh-CN,zh;q=0.9",
-            origin: "https://seed.qq.com",
-            priority: "u=1, i",
-            referer: "https://seed.qq.com/",
-            "content-type": "application/x-www-form-urlencoded",
-            Host: "comm.ams.game.qq.com",
-            Connection: "keep-alive",
-            Cookie: params.cookie
-          }
+      console.log(baseBody);
+      const body = {
+        ...baseBody,
+        ...params.type === "memoryTrace" ? memoryTraceBody : characterBody,
+        startTime: params.dateRange[0],
+        endTime: params.dateRange[1]
+      };
+      const response = await axios.post("https://comm.ams.game.qq.com/ide/", body, {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "zh-CN,zh;q=0.9",
+          origin: "https://seed.qq.com",
+          priority: "u=1, i",
+          referer: "https://seed.qq.com/",
+          "content-type": "application/x-www-form-urlencoded",
+          Host: "comm.ams.game.qq.com",
+          Connection: "keep-alive",
+          Cookie: params.cookie
         }
-      );
+      });
       return JSON.parse(
         JSON.stringify({
           data: response.data.jData.data,
@@ -2450,3 +2455,11 @@ function createJsBridge() {
   return bridge;
 }
 electron.contextBridge.exposeInMainWorld("jsBridge", createJsBridge());
+electron.contextBridge.exposeInMainWorld("electron", {
+  send: (channel, data) => {
+    electron.ipcRenderer.send(channel, data);
+  },
+  on: (channel, callback) => {
+    electron.ipcRenderer.on(channel, (event, ...args) => callback(...args));
+  }
+});
