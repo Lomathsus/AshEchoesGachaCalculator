@@ -1,21 +1,14 @@
-import { BrowserWindow, app, ipcMain, session } from 'electron'
-import fs from 'fs'
+import { BrowserWindow, app, ipcMain } from 'electron'
 import path from 'path'
 
-import { makeChannelName, services } from './services'
+import initServices from './services/init'
+import { saveSpecificCookiesAsJson } from './utils/saveCookies'
+
+initServices()
 
 // 检查是否处于开发环境
 const isDev = process.env.NODE_ENV === 'development'
-
 console.log('NODE_ENV', isDev ? 'development' : 'production')
-
-type ApiFunction = (...args: any[]) => any
-
-services.forEach((service) => {
-  Object.entries(service.methods).forEach(([apiName, apiFn]: [string, ApiFunction]) => {
-    ipcMain.handle(makeChannelName(service.name, apiName), (ev, ...args: any[]) => apiFn(...args))
-  })
-})
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -29,7 +22,7 @@ function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 750,
-    height: 600,
+    height: 680,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -67,34 +60,10 @@ function createAuthWindow() {
   })
 }
 
-function getAssetPath(subPath: string) {
-  // 开发环境动态调整路径
-  const basePath = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets', 'data')
-    : path.join(__dirname, 'assets', 'data')
-  return path.join(basePath, subPath)
-}
-
-function saveSpecificCookiesAsJson(cookieName: string) {
-  const cookiePath = getAssetPath('cookies.json') // 使用动态路径
-  const userDataPath = app.getPath('userData')
-  console.log(userDataPath)
-  session.defaultSession.cookies
-    .get({})
-    .then((cookies) => {
-      const specificCookies = cookies.filter((cookie) => cookie.name === cookieName)
-      fs.mkdirSync(path.dirname(cookiePath), { recursive: true }) // 确保目录存在
-      fs.writeFileSync(cookiePath, JSON.stringify(specificCookies, null, 2))
-      console.log('Specific cookies have been saved as JSON:', cookiePath)
-    })
-    .catch((error) => {
-      console.error('Failed to get cookies:', error)
-    })
-}
-
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
+
 app.whenReady().then(() => {
   app.dock.setIcon(path.join(__dirname, '../../assets/images/icon.png'))
 

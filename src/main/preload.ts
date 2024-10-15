@@ -13,6 +13,7 @@ interface Bridge {
 
 function createJsBridge(): any {
   const bridge: Bridge = {}
+
   services.forEach((service) => {
     bridge[service.name] = {} as any
     Object.keys(service.methods).forEach((fnName) => {
@@ -20,6 +21,7 @@ function createJsBridge(): any {
         ipcRenderer.invoke(makeChannelName(service.name, fnName), ...args)
     })
   })
+
   return bridge
 }
 
@@ -33,4 +35,6 @@ contextBridge.exposeInMainWorld('electron', {
   on: (channel: string, callback: (...args: any[]) => void) => {
     ipcRenderer.on(channel, (event: IpcRendererEvent, ...args: any[]) => callback(...args))
   },
+
+  readCookies: () => ipcRenderer.invoke('read-cookies-json'),
 })

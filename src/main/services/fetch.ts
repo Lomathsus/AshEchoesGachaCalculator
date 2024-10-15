@@ -6,7 +6,6 @@ const fetchService = {
   name: 'fetch',
   methods: {
     async fetchGachaData(params: { dateRange: [number, number]; type: string; cookie: string }) {
-      console.log(baseBody)
       const body = {
         ...baseBody,
         ...(params.type === 'memoryTrace' ? memoryTraceBody : characterBody),

@@ -30,6 +30,12 @@
     "import/no-duplicates": 0,
     "import/no-named-as-default-member": 0,
     "import/order": 0, // eslint引入依赖的排序功能 [关闭，会与perttier的排序冲突]
+    "import/no-unresolved": [
+      "warn",
+      {
+        "ignore": ["^@/", "^root", "^store"] // @ 是设置的路径别名
+      }
+    ],
     "prefer-destructuring": [
       1,
       {

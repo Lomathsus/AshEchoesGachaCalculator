@@ -1,110 +1,35 @@
-import { useUpdateEffect } from 'ahooks'
+import { useAsyncEffect, useUpdateEffect } from 'ahooks'
 import { Card, Col, Flex, Radio, Row, Statistic, Table } from 'antd'
-import { flatMapDeep, uniqueId } from 'lodash'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useGachaStore } from 'stores'
 
 import { Container } from '@mui/material'
 
-import pools from '../../../../assets/data/pool.json'
-import { cookie } from '../../../main/constant'
-import generate30DayIntervals from './utils/calculateDateTime'
-
-function delay(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms)
-  })
-}
-
 export default function Main() {
-  const [characterList, setCharacterList] = useState([])
-  const [memoryTraceList, setMemoryTraceList] = useState([])
-  const [gachaCategories, setGachaCategories] = useState([])
-  const [gachaCount, setGachaCount] = useState(0)
-  const [ssrCount, setSsrCount] = useState(0)
-
   const [tag, setTag] = useState('character')
 
+  const {
+    characterList,
+    memoryTraceList,
+    gachaCategories,
+    gachaCount,
+    ssrCount,
+    fetchGachaList,
+    fetchJsonList,
+  } = useGachaStore()
+
   useEffect(() => {
-    const fetchGachaList = async () => {
-      try {
-        const fetchCharacter = fetch('/api/act/a20240905record/pc/json/concordant.json')
-        const fetchMemoryTrace = fetch('/api/act/a20240905record/pc/json/soldering_mark.json')
-        const [characterResponse, memoryTraceResponse] = await Promise.all([fetchCharacter, fetchMemoryTrace])
-        // 检查响应是否成功
-        if (!characterResponse.ok || !memoryTraceResponse.ok) {
-          throw new Error('Network response was not ok')
-        }
-        // 将响应数据解析为 JSON
-        const characterData = await characterResponse.json()
-        const memoryTraceData = await memoryTraceResponse.json()
+    fetchJsonList()
+  }, [])
 
-        console.log(characterData)
-        console.log(memoryTraceData)
-
-        setCharacterList(characterData)
-        setMemoryTraceList(memoryTraceData)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-
-    fetchGachaList()
+  useAsyncEffect(async () => {
+    const cookies = await window.electron.readCookies()
+    console.log(cookies)
   }, [])
 
   useUpdateEffect(() => {
-    const getGachaData = async (type) => {
-      try {
-        const dateIntervals = generate30DayIntervals()
-        const rawDataList = []
-        for (const dateRange of dateIntervals) {
-          const res = await window.jsBridge.fetch.fetchGachaData({ dateRange, type, cookie })
-          const { code, data } = res
-          if (code === 200) {
-            rawDataList.push(...Object.values(data))
-          }
-          if (dateRange !== dateIntervals[dateIntervals.length - 1]) {
-            await delay(100)
-          }
-        }
-        const gachaRecords = flatMapDeep(rawDataList).filter((item) => {
-          const { poolId } = item
-          return Number(poolId) > 11 && Number(poolId) !== 101 && Number(poolId) !== 100
-        })
-        const ssrRecords = gachaRecords.filter((item) => {
-          return type === 'memoryTrace'
-            ? memoryTraceList[Number(item.tid)].rarity === '3'
-            : characterList[Number(item.tid)].rarity === '6'
-        })
-        setGachaCount(gachaRecords.length)
-        setSsrCount(ssrRecords.length)
-
-        const classifiedGachaData = gachaRecords.reduce((acc, item) => {
-          const { poolId } = item
-          const found = acc.find((item) => item.poolId === poolId)
-          if (!found) {
-            const obj = {
-              key: uniqueId('pool-'),
-              poolId,
-              poolName: pools[poolId.toString()].name,
-              tid: pools[poolId.toString()].tid,
-              values: [item],
-            }
-            obj.total = obj.values.length
-            acc.push(obj)
-          } else {
-            found.values.push(item)
-            found.total = found.values.length
-          }
-          return acc
-        }, [])
-
-        setGachaCategories(classifiedGachaData)
-      } catch (err) {
-        console.error(err)
-      }
-    }
-    getGachaData(tag)
-  }, [memoryTraceList, tag])
+    fetchGachaList(tag)
+  }, [characterList, memoryTraceList, tag])
 
   const characterColumns = [
     {
@@ -163,18 +88,19 @@ export default function Main() {
     },
     {
       title: '当期UP',
-      dataIndex: 'currentCharacterCount',
+      dataIndex: 'accurateSsrCount',
       render: (_, record) => {
-        const accurateSsrRecords = record.values.filter((item) => Number(item.tid) === record.tid)
+        console.log(1, record, record.values)
+        const accurateSsrRecords = record.values.filter((item) => Number(item.tid) === Number(record.tid))
         return accurateSsrRecords.length
       },
     },
     {
       title: '歪',
-      dataIndex: 'otherCharacterCount',
+      dataIndex: 'otherSsrCount',
       render: (_, record) => {
         const otherSsrRecords = record.values.filter(
-          (item) => memoryTraceList[item.tid].rarity === '3' && Number(item.tid) !== record.tid
+          (item) => memoryTraceList[Number(item.tid)].rarity === '3' && Number(item.tid) !== record.tid
         )
         return otherSsrRecords.length
       },
@@ -186,65 +112,13 @@ export default function Main() {
     {
       title: '出货率',
       dataIndex: 'rate',
-      render: () => {
-        const ssrRate = ((ssrCount / gachaCount) * 100).toFixed(2)
+      render: (_, record) => {
+        const ssrRecords = record.values.filter((item) => memoryTraceList[item.tid].rarity === '3')
+        const ssrRate = ((ssrRecords.length / record.total) * 100).toFixed(2)
         return `${ssrRate}%`
       },
     },
   ]
-
-  // useUpdateEffect(() => {
-  //   const getCharacterGachaData = async () => {
-  //     try {
-  //       const dateIntervals = generate30DayIntervals()
-  //       const rawDataList = []
-  //       for (const dateRange of dateIntervals) {
-  //         const res = await window.jsBridge.fetch.fetchGachaData({ dateRange, type: 'character', cookie })
-  //         const { code, data } = res
-  //         if (code === 200) {
-  //           rawDataList.push(...Object.values(data))
-  //         }
-  //         if (dateRange !== dateIntervals[dateIntervals.length - 1]) {
-  //           await delay(100)
-  //         }
-  //       }
-  //       const characterGachaRecords = flatMapDeep(rawDataList).filter((item) => {
-  //         const { poolId } = item
-  //         return Number(poolId) > 11 && Number(poolId) !== 101 && Number(poolId) !== 100
-  //       })
-  //       const characterSsrRecords = characterGachaRecords.filter(
-  //         (item) => characterList[Number(item.tid)].rarity === '6'
-  //       )
-  //       setGachaCount(characterGachaRecords.length)
-  //       setSsrCount(characterSsrRecords.length)
-  //
-  //       const classifiedGachaData = characterGachaRecords.reduce((acc, item) => {
-  //         const { poolId } = item
-  //         const found = acc.find((item) => item.poolId === poolId)
-  //         if (!found) {
-  //           const obj = {
-  //             key: uniqueId('pool-'),
-  //             poolId,
-  //             poolName: pools[poolId.toString()].name,
-  //             tid: pools[poolId.toString()].tid,
-  //             values: [item],
-  //           }
-  //           obj.total = obj.values.length
-  //           acc.push(obj)
-  //         } else {
-  //           found.values.push(item)
-  //           found.total = found.values.length
-  //         }
-  //         return acc
-  //       }, [])
-  //
-  //       setGachaCategories(classifiedGachaData)
-  //     } catch (err) {
-  //       console.error(err)
-  //     }
-  //   }
-  //   getCharacterGachaData()
-  // }, [characterList])
 
   return (
     <Container maxWidth="md">
@@ -271,19 +145,19 @@ export default function Main() {
         <Row gutter={16}>
           <Col span={8}>
             <Card bordered={false}>
-              <Statistic title="总抽数" value={gachaCount} valueStyle={{ color: '#3f8600' }} />
+              <Statistic title="总抽数" value={gachaCount[tag]} valueStyle={{ color: '#3f8600' }} />
             </Card>
           </Col>
           <Col span={8}>
             <Card bordered={false}>
-              <Statistic title="SSR" value={ssrCount} valueStyle={{ color: '#cf1322' }} />
+              <Statistic title="SSR" value={ssrCount[tag]} valueStyle={{ color: '#cf1322' }} />
             </Card>
           </Col>
           <Col span={8}>
             <Card bordered={false}>
               <Statistic
                 title="出货率"
-                value={(ssrCount / gachaCount) * 100 || 0}
+                value={(ssrCount[tag] / gachaCount[tag]) * 100 || 0}
                 precision={2}
                 valueStyle={{ color: '#cf1322' }}
                 suffix="%"
@@ -291,22 +165,22 @@ export default function Main() {
             </Card>
           </Col>
         </Row>
-        {tag.current === 'character' && (
+        {tag === 'character' && (
           <Table
             bordered
             size="small"
-            dataSource={gachaCategories}
+            dataSource={gachaCategories.character}
             columns={characterColumns}
             virtual
             scroll={{ y: 370 }}
             pagination={false}
           />
         )}
-        {tag.current === 'memoryTrace' && (
+        {tag === 'memoryTrace' && (
           <Table
             bordered
             size="small"
-            dataSource={gachaCategories}
+            dataSource={gachaCategories.memoryTrace}
             columns={memoryTraceColumns}
             virtual
             scroll={{ y: 370 }}
