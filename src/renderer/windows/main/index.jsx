@@ -22,11 +22,6 @@ export default function Main() {
     fetchJsonList()
   }, [])
 
-  useAsyncEffect(async () => {
-    const cookies = await window.electron.readCookies()
-    console.log(cookies)
-  }, [])
-
   useUpdateEffect(() => {
     fetchGachaList(tag)
   }, [characterList, memoryTraceList, tag])
@@ -123,13 +118,6 @@ export default function Main() {
   return (
     <Container maxWidth="md">
       <Flex vertical gap="middle">
-        <button
-          onClick={() => {
-            window.electron.send('open-auth-window')
-          }}
-        >
-          Open Auth Window
-        </button>
         <Radio.Group
           block
           optionType="button"

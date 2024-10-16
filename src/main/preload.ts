@@ -3,19 +3,18 @@
 import type { IpcRendererEvent } from 'electron'
 import { contextBridge, ipcRenderer } from 'electron'
 
-import { makeChannelName, services } from './services'
+// import type { services } from '@/main/services'
+import { makeChannelName, services } from '@/main/services'
 
-interface Bridge {
-  [serviceName: string]: {
-    [methodName: string]: (...args: any[]) => any
+type Bridge = {
+  [key in (typeof services)[number]['name']]: {
+    [propName: string]: (...args: any[]) => void
   }
 }
-
 function createJsBridge(): any {
-  const bridge: Bridge = {}
-
+  const bridge: Bridge = {} as any
   services.forEach((service) => {
-    bridge[service.name] = {} as any
+    bridge[service.name] = {}
     Object.keys(service.methods).forEach((fnName) => {
       bridge[service.name][fnName] = (...args) =>
         ipcRenderer.invoke(makeChannelName(service.name, fnName), ...args)
@@ -26,7 +25,6 @@ function createJsBridge(): any {
 }
 
 contextBridge.exposeInMainWorld('jsBridge', createJsBridge())
-// 安全地暴露 ipcRenderer API 给渲染进程
 
 contextBridge.exposeInMainWorld('electron', {
   send: (channel: string, data?: any) => {
@@ -35,6 +33,5 @@ contextBridge.exposeInMainWorld('electron', {
   on: (channel: string, callback: (...args: any[]) => void) => {
     ipcRenderer.on(channel, (event: IpcRendererEvent, ...args: any[]) => callback(...args))
   },
-
-  readCookies: () => ipcRenderer.invoke('read-cookies-json'),
+  fetchGachaData: (...args) => ipcRenderer.invoke('fetch-gacha-data', ...args),
 })

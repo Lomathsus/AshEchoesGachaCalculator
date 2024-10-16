@@ -3,9 +3,7 @@ import pools from 'root/assets/data/pool.json'
 import { create } from 'zustand/index'
 import { immer } from 'zustand/middleware/immer'
 
-import { cookie } from '@/main/constant'
-
-import generate30DayIntervals from '../windows/main/utils/calculateDateTime'
+import generate30DayIntervals from '@/renderer/utils/calculateDateTime'
 
 function delay(ms) {
   return new Promise((resolve) => {
@@ -61,7 +59,8 @@ const useGachaStore = create(
         const dateIntervals = generate30DayIntervals()
         const rawDataList = []
         for (const dateRange of dateIntervals) {
-          const res = await window.jsBridge.fetch.fetchGachaData({ dateRange, type, cookie })
+          const res = await window.electron.fetchGachaData({ dateRange, type })
+          console.log(res)
           const { code, data } = res
           if (code === 200) {
             rawDataList.push(...Object.values(data))

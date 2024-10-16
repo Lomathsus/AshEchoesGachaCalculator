@@ -9,18 +9,22 @@ function getDataPath(subPath: string) {
 }
 
 function saveSpecificCookiesAsJson(cookieName: string) {
-  const cookiePath = getDataPath('cookies.json') // 使用动态路径
-  session.defaultSession.cookies
-    .get({})
-    .then((cookies) => {
-      const specificCookies = cookies.filter((cookie) => cookie.name === cookieName)
-      fs.mkdirSync(path.dirname(cookiePath), { recursive: true }) // 确保目录存在
-      fs.writeFileSync(cookiePath, JSON.stringify(specificCookies, null, 2))
-      console.log('Specific cookies have been saved as JSON:', cookiePath)
-    })
-    .catch((error) => {
-      console.error('Failed to get cookies:', error)
-    })
+  return new Promise<string>((resolve, reject) => {
+    const cookiePath = getDataPath('cookies.json') // 使用动态路径
+    session.defaultSession.cookies
+      .get({})
+      .then((cookies) => {
+        const specificCookies = cookies.filter((cookie) => cookie.name === cookieName)
+        fs.mkdirSync(path.dirname(cookiePath), { recursive: true }) // 确保目录存在
+        fs.writeFileSync(cookiePath, JSON.stringify(specificCookies, null, 2))
+        console.log('Specific cookies have been saved as JSON:', cookiePath)
+        resolve(cookiePath)
+      })
+      .catch((error) => {
+        console.error('Failed to get cookies:', error)
+        reject(error)
+      })
+  })
 }
 
 // 读取 Cookies 的函数

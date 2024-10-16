@@ -1,10 +1,11 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { RouterProvider } from 'react-router-dom'
 
-import Main from './renderer/windows/main'
+import router from '@/renderer/router'
 
 function App() {
-  return <Main />
+  return <RouterProvider router={router} />
 }
 
 const rootElement = document.getElementById('root')
