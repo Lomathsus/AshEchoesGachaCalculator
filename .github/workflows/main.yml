@@ -1,4 +1,4 @@
-name: Build and Release
+name: Release
 
 on:
   push:
@@ -6,67 +6,32 @@ on:
       - 'v*'
 
 jobs:
-  build-and-release:
-    runs-on: [ubuntu-latest, macos-latest, windows-latest]
+  release:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ macos-latest, windows-latest, ubuntu-latest ]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '20' # 确保与你的项目 Node.js 版本一致
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
 
-    - name: Install dependencies
-      run: yarn install
+      - name: Set Mirror Registry
+        run: npx nrm use taobao
 
-    - name: Build project
-      run: yarn make
+      - name: Install dependencies
+        run: yarn install
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        draft: false
-        prerelease: false
+      - name: Build the Electron app
+        run: yarn make
 
-    - name: Upload Release Asset (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: out/make/squirrel.windows/x64/release/*.exe
-        asset_name: your-appname-linux.zip
-        asset_content_type: application/zip
-
-    - name: Upload Release Asset (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: out/make/squirrel.windows/x64/release/*.exe
-        asset_name: your-appname-windows.exe
-        asset_content_type: application/vnd.microsoft.portable-executable
-        
-    - name: Upload Release Asset (macOS)
-      if: matrix.os == 'macos-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: out/make/zip/darwin/*.zip
-        asset_name: your-appname-macos.zip
-        asset_content_type: application/zip
+      - name: Publish to GitHub Releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: yarn run publish

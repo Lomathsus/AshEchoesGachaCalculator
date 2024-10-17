@@ -39,6 +39,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.5.0",
     "@electron-forge/plugin-fuses": "^7.5.0",
     "@electron-forge/plugin-vite": "^7.5.0",
+    "@electron-forge/publisher-github": "^7.5.0",
     "@electron-forge/shared-types": "^7.5.0",
     "@electron/fuses": "^1.8.0",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
@@ -69,6 +70,5 @@
     "name": "XiangyuCao",
     "email": "xiangyu1205@gmail.com"
   },
-  "license": "MIT",
-  "packageManager": "yarn@4.4.0+sha512.91d93b445d9284e7ed52931369bc89a663414e5582d00eea45c67ddc459a2582919eece27c412d6ffd1bd0793ff35399381cb229326b961798ce4f4cc60ddfdb"
+  "license": "MIT"
 }

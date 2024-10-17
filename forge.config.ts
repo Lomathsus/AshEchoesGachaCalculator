@@ -1,7 +1,6 @@
 import path from 'path'
 
 import { MakerDeb } from '@electron-forge/maker-deb'
-import MakerDMG from '@electron-forge/maker-dmg'
 import { MakerRpm } from '@electron-forge/maker-rpm'
 import { MakerSquirrel } from '@electron-forge/maker-squirrel'
 import { MakerZIP } from '@electron-forge/maker-zip'
@@ -13,6 +12,7 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses'
 const config: ForgeConfig = {
   packagerConfig: {
     name: '白荆回廊抽卡统计',
+    executableName: 'ashechoesgachacalculator',
     asar: true,
     icon: path.join(__dirname, './build-resources/icons/icon'), // no file extension required
     extraResource: [path.join(__dirname, './build-resources/icons')],
@@ -26,7 +26,7 @@ const config: ForgeConfig = {
     //     icon: path.join(__dirname, './build-resources/icons/icon.icns'),
     //   },
     // },
-    new MakerZIP({}, ['darwin']),
+    new MakerZIP({}, ['win32', 'darwin']),
     new MakerRpm({}),
     new MakerDeb({}),
   ],
@@ -65,6 +65,18 @@ const config: ForgeConfig = {
       [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
       [FuseV1Options.OnlyLoadAppFromAsar]: true,
     }),
+  ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'Lomathsus',
+          name: 'AshEchoesGachaCalculator',
+        },
+        prerelease: true,
+      },
+    },
   ],
 }
 
