@@ -1,22 +1,19 @@
-import axios from 'axios'
 import { BrowserWindow, app, ipcMain } from 'electron'
 import fs from 'fs'
 import path from 'path'
 
-import { baseBody, characterBody, memoryTraceBody } from '@/main/constant'
 import registerIpcHandle from '@/main/ipc/handlers'
-import { startURL } from '@/main/utils/runtime'
+import { assetsPath, resourcesPath, startURL } from '@/main/utils/runtime'
 
 import { getDataPath, saveSpecificCookiesAsJson } from './utils/saveCookies'
-
-registerIpcHandle()
 
 // 检查是否处于开发环境
 const isDev = process.env.NODE_ENV === 'development'
 console.log('NODE_ENV', isDev ? 'development' : 'production')
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) {
+
+if (process.platform === 'win32' && require('electron-squirrel-startup')) {
   app.quit()
 }
 
@@ -31,64 +28,29 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
-    icon: path.join(__dirname, '../../assets/images/icon.png'),
+    icon: path.join(resourcesPath, './icons/icon.png'),
   })
 
   // 读取本地文件并做判断
-  fs.readFile(path.join(__dirname, 'assets', 'data', 'cookie.json'), 'utf-8', (err, data) => {
+  fs.readFile(getDataPath('cookies.json'), 'utf-8', (err, data) => {
     if (err || !data) {
       // 文件不存在或者读取失败，导航到 /auth
-      mainWindow.loadURL(`${startURL}/#/login`)
+      mainWindow.loadURL(`${startURL}#/login`)
     } else {
       // 文件存在且读取成功，导航到 /home
       mainWindow.loadURL(startURL)
     }
   })
 
-  ipcMain.handle('fetch-gacha-data', async (event, params: { dateRange: [number, number]; type: string }) => {
-    const cookiePath = getDataPath('cookies.json') // 使用动态路径
-    try {
-      const json = fs.readFileSync(cookiePath, 'utf-8')
-      const body = {
-        ...baseBody,
-        ...(params.type === 'memoryTrace' ? memoryTraceBody : characterBody),
-        startTime: params.dateRange[0],
-        endTime: params.dateRange[1],
-      }
-      const response = await axios.post('https://comm.ams.game.qq.com/ide/', body, {
-        headers: {
-          accept: 'application/json, text/plain, */*',
-          'accept-language': 'zh-CN,zh;q=0.9',
-          origin: 'https://seed.qq.com',
-          priority: 'u=1, i',
-          referer: 'https://seed.qq.com/',
-          'content-type': 'application/x-www-form-urlencoded',
-          Host: 'comm.ams.game.qq.com',
-          Connection: 'keep-alive',
-          Cookie: JSON.parse(json)
-            .map((item) => `${item.name}=${item.value}`)
-            .join(';'),
-        },
-      })
-
-      return JSON.parse(
-        JSON.stringify({
-          data: response.data.jData.data,
-          code: response.status,
-        })
-      )
-    } catch (err) {
-      console.error('读取文件时发生错误:', err)
-    }
-  })
   // 监听导航到首页的事件
   ipcMain.on('navigate-home', () => {
     if (mainWindow) {
       mainWindow.loadURL(startURL)
     }
   })
+
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  if (!app.isPackaged) mainWindow.webContents.openDevTools()
 }
 
 function createAuthWindow() {
@@ -112,9 +74,9 @@ function createAuthWindow() {
         // 保存完成后检查文件并导航
         fs.readFile(cookiePath, 'utf-8', (err, data) => {
           if (err || !data) {
-            console.log('cookie.json 文件不存在或读取失败')
+            console.log('cookies.json 文件不存在或读取失败')
           } else {
-            console.log('cookie.json 文件存在，导航到首页')
+            console.log('cookies.json 文件存在，导航到首页')
             if (mainWindow) {
               mainWindow.loadURL(startURL)
             }
@@ -132,8 +94,9 @@ function createAuthWindow() {
 // Some APIs can only be used after this event occurs.
 
 app.whenReady().then(() => {
-  app.dock.setIcon(path.join(__dirname, '../../assets/images/icon.png'))
+  app.dock.setIcon(path.join(resourcesPath, './icons/icon.png'))
 
+  registerIpcHandle()
   createWindow()
 
   ipcMain.on('open-auth-window', () => {

@@ -1,8 +1,8 @@
 import { flatMapDeep, uniqueId } from 'lodash'
-import pools from 'root/assets/data/pool.json'
 import { create } from 'zustand/index'
 import { immer } from 'zustand/middleware/immer'
 
+import pools from '@/renderer/public/pool.json'
 import generate30DayIntervals from '@/renderer/utils/calculateDateTime'
 
 function delay(ms) {
@@ -32,16 +32,22 @@ const useGachaStore = create(
 
     fetchJsonList: async () => {
       try {
-        const fetchCharacter = fetch('/api/act/a20240905record/pc/json/concordant.json')
-        const fetchMemoryTrace = fetch('/api/act/a20240905record/pc/json/soldering_mark.json')
+        const fetchCharacter = window.axios.get(
+          'https://seed.qq.com/act/a20240905record/pc/json/concordant.json'
+        )
+        const fetchMemoryTrace = window.axios.get(
+          'https://seed.qq.com/act/a20240905record/pc/json/soldering_mark.json'
+        )
+
         const [characterResponse, memoryTraceResponse] = await Promise.all([fetchCharacter, fetchMemoryTrace])
+
         // 检查响应是否成功
-        if (!characterResponse.ok || !memoryTraceResponse.ok) {
+        if (characterResponse.code !== 200 || memoryTraceResponse.code !== 200) {
           throw new Error('Network response was not ok')
         }
         // 将响应数据解析为 JSON
-        const characterData = await characterResponse.json()
-        const memoryTraceData = await memoryTraceResponse.json()
+        const characterData = characterResponse.data
+        const memoryTraceData = memoryTraceResponse.data
 
         console.log(characterData)
         console.log(memoryTraceData)
@@ -59,7 +65,7 @@ const useGachaStore = create(
         const dateIntervals = generate30DayIntervals()
         const rawDataList = []
         for (const dateRange of dateIntervals) {
-          const res = await window.electron.fetchGachaData({ dateRange, type })
+          const res = await window.jsBridge.fetch.getGachaData({ dateRange, type })
           console.log(res)
           const { code, data } = res
           if (code === 200) {

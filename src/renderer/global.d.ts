@@ -6,12 +6,14 @@ type ExtractService<T> = T extends { name: infer N; methods: infer M }
     ? { [K in N]: M }
     : never
   : never
-type CombinedServices<T extends readonly any[]> = UnionToIntersection<ExtractService<T[number]>>
 // 这个实用工具类型将联合类型转换为交集类型
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
   ? I
   : never
+type CombinedServices<T extends readonly any[]> = UnionToIntersection<ExtractService<T[number]>>
+
 type CombinedServiceType = CombinedServices<typeof services>
+
 export type JsBridgeApi = CombinedServiceType
 
 export interface ElectronAPI {
@@ -22,6 +24,7 @@ export interface ElectronAPI {
 declare global {
   interface Window {
     electron: ElectronAPI
-    jsBridge: JsBridgeApi
+    jsBridge: Omit<JsBridgeApi, 'axios'>
+    axios: JsBridgeApi['axios']
   }
 }

@@ -1,4 +1,7 @@
+import path from 'path'
+
 import { MakerDeb } from '@electron-forge/maker-deb'
+import MakerDMG from '@electron-forge/maker-dmg'
 import { MakerRpm } from '@electron-forge/maker-rpm'
 import { MakerSquirrel } from '@electron-forge/maker-squirrel'
 import { MakerZIP } from '@electron-forge/maker-zip'
@@ -9,12 +12,24 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses'
 
 const config: ForgeConfig = {
   packagerConfig: {
-    name: 'AshEchoes',
+    name: '白荆回廊抽卡统计',
     asar: true,
-    icon: '/assets/images/icon', // no file extension required
+    icon: path.join(__dirname, './build-resources/icons/icon'), // no file extension required
+    extraResource: [path.join(__dirname, './build-resources/icons')],
   },
   rebuildConfig: {},
-  makers: [new MakerSquirrel({}), new MakerZIP({}, ['darwin']), new MakerRpm({}), new MakerDeb({})],
+  makers: [
+    new MakerSquirrel({}),
+    // {
+    //   name: '@electron-forge/maker-dmg',
+    //   config: {
+    //     icon: path.join(__dirname, './build-resources/icons/icon.icns'),
+    //   },
+    // },
+    new MakerZIP({}, ['darwin']),
+    new MakerRpm({}),
+    new MakerDeb({}),
+  ],
   plugins: [
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
@@ -27,7 +42,7 @@ const config: ForgeConfig = {
           target: 'main',
         },
         {
-          entry: 'src/main/preload.ts',
+          entry: 'src/main/preload/preload.ts',
           config: 'vite.preload.config.ts',
           target: 'preload',
         },
