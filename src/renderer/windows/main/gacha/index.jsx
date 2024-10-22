@@ -3,7 +3,7 @@ import { Card, Col, Flex, Radio, Row, Statistic, Table } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { useGachaStore } from 'stores'
 
-import { Container } from '@mui/material'
+import { Container } from '@mui/system'
 
 export default function Main() {
   const [tag, setTag] = useState('character')

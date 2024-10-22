@@ -3,7 +3,7 @@ import fs from 'fs'
 import path from 'path'
 
 import registerIpcHandle from '@/main/ipc/handlers'
-import { assetsPath, resourcesPath, startURL } from '@/main/utils/runtime'
+import { resourcesPath, startURL } from '@/main/utils/runtime'
 
 import { getDataPath, saveSpecificCookiesAsJson } from './utils/saveCookies'
 
@@ -33,8 +33,10 @@ function createWindow() {
 
   // 读取本地文件并做判断
   fs.readFile(getDataPath('cookies.json'), 'utf-8', (err, data) => {
-    if (err || !data) {
-      // 文件不存在或者读取失败，导航到 /auth
+    const token = JSON.parse(data).find((item: any) => item.name === 'token')
+
+    if (err || !data || token.expirationDate < Date.now() / 1000) {
+      // 文件不存在或者读取失败或token逾期，导航到 /auth
       mainWindow.loadURL(`${startURL}#/login`)
     } else {
       // 文件存在且读取成功，导航到 /home

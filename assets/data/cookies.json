@@ -1,0 +1,14 @@
+[
+  {
+    "name": "token",
+    "value": "6370c048b48bb31756f46e4db32c276331f6c73c08bd77553549442e76816ff784bc8078bfd8eeb867",
+    "domain": ".qq.com",
+    "hostOnly": false,
+    "path": "/",
+    "secure": false,
+    "httpOnly": false,
+    "session": false,
+    "expirationDate": 1729574991,
+    "sameSite": "unspecified"
+  }
+]

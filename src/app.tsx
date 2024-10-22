@@ -4,6 +4,8 @@ import { RouterProvider } from 'react-router-dom'
 
 import router from '@/renderer/router'
 
+import './reset.css'
+
 function App() {
   return <RouterProvider router={router} />
 }

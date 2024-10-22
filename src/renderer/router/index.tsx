@@ -1,7 +1,7 @@
 import { createHashRouter } from 'react-router-dom'
 
-import Main from '@/renderer/windows/main'
-import Login from '@/renderer/windows/main/login'
+import Main from '@/renderer/windows/main/gacha'
+import Login from '@/renderer/windows/main/gacha/login'
 
 const router = createHashRouter([
   { path: '/login', Component: Login },
